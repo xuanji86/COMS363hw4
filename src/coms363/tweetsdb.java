@@ -1,15 +1,11 @@
 package coms363;
 
-import java.awt.Color;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.sql.*;
+import com.mysql.cj.jdbc.exceptions.MySQLQueryInterruptedException;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
-import java.awt.GridLayout;
-
-import com.mysql.cj.jdbc.exceptions.MySQLQueryInterruptedException;
+import java.awt.*;
+import java.sql.*;
 
 /*
  * Author: ComS 363 Teaching Staff
@@ -157,9 +153,12 @@ public class tweetsdb {
 			 * that have ? in them where ? is
 			 * replaced by a value obtained from a user
 			 */
+			PreparedStatement ststmt = conn.prepareStatement(
+					" insert into users (screen_name) values(?) ");
 			PreparedStatement inststmt = conn.prepareStatement(
 					" insert into tweets (tid, post_day, post_month, post_year, texts, retweetCt,user_screen_name) values(?,?,?,?,?,?,?) ");
 
+			ststmt.setString(1,user_screen_name);
 			inststmt.setInt(1, tid);
 			inststmt.setInt(2, post_day);
 			inststmt.setInt(3, post_month);
