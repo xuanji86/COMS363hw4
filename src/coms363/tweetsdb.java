@@ -8,6 +8,8 @@ import java.sql.*;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 
+import com.mysql.cj.jdbc.exceptions.MySQLQueryInterruptedException;
+
 /*
  * Author: ComS 363 Teaching Staff
  * Examples of static queries, parameterized queries, and 
@@ -51,7 +53,8 @@ public class tweetsdb {
 		panel.setBorder(new LineBorder(Color.GRAY));
 
 		String[] options = new String[] { "OK", "Cancel" };
-		int ioption = JOptionPane.showOptionDialog(null, panel, "Login", JOptionPane.OK_OPTION,
+		int ioption = JOptionPane.showOptionDialog(null, panel, "Login",
+				JOptionPane.OK_OPTION,
 				JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
 
 		// store the username in the first slot.
@@ -102,15 +105,11 @@ public class tweetsdb {
 		rs.close();
 	}
 
-	/**
-	 * Show an example of a transaction
-	 * 
-	 * @param conn Valid database connection
-	 *             fname: Name of a food to check
-	 */
-	private static void insertFood(Connection conn, String fname) {
+	private static void insertNewTweet(Connection conn, int tid, int post_day, int post_month, int post_year,
+			String texts, int retweetCt,
+			String user_screen_name) {
 
-		if (conn == null || fname == null)
+		if (conn == null || tid == 0 || user_screen_name == null)
 			throw new NullPointerException();
 		try {
 			/*
@@ -138,13 +137,14 @@ public class tweetsdb {
 
 			Statement stmt = conn.createStatement();
 			ResultSet rs;
-			int id = 0;
 
 			// get the maximum id from the food table
-			rs = stmt.executeQuery("select max(fid) from food");
+			rs = stmt.executeQuery("select tid,user_screen_name from project.tweets");
 			while (rs.next()) {
 				// 1 indicates the position of the returned result we want to get
-				id = rs.getInt(1);
+				if (tid == rs.getInt(1)) {
+					throw new MySQLQueryInterruptedException("Repeated tid");
+				}
 			}
 			rs.close();
 			stmt.close();
@@ -156,12 +156,15 @@ public class tweetsdb {
 			 * replaced by a value obtained from a user
 			 */
 			PreparedStatement inststmt = conn.prepareStatement(
-					" insert into food (fid,fname) values(?,?) ");
+					" insert into tweets (tid, post_day, post_month, post_year, texts, retweetCt,user_screen_name) values(?,?,?,?,?,?,?) ");
 
-			// Set the first ? to have the new food id
-			inststmt.setInt(1, id + 1);
-			// Set the second ? to have the food name
-			inststmt.setString(2, fname);
+			inststmt.setInt(1, tid);
+			inststmt.setInt(2, post_day);
+			inststmt.setInt(3, post_month);
+			inststmt.setInt(4, post_year);
+			inststmt.setString(5, texts);
+			inststmt.setInt(6, retweetCt);
+			inststmt.setString(7, user_screen_name);
 
 			// tell DBMS to insert the food into the table
 			int rowcount = inststmt.executeUpdate();
@@ -178,60 +181,6 @@ public class tweetsdb {
 
 			// Reset the autocommit to commit per SQL statement
 			conn.setAutoCommit(true);
-
-		} catch (SQLException e) {
-		}
-
-	}
-
-	/*
-	 * this example shows how to use a parameterized SQL query
-	 * 
-	 * @param conn: Valid connection to a dbms
-	 * iname: the name of the ingredient to check
-	 */
-
-	private static void checkIngredient(Connection conn, String iname) {
-
-		if (conn == null || iname == null)
-			throw new NullPointerException();
-		try {
-
-			ResultSet rs = null;
-			String toShow = "";
-
-			/*
-			 * Another example of a parameterized query
-			 * Notice the use of PreparedStatement instead of Statement
-			 * used in a static query.
-			 * 
-			 */
-			PreparedStatement lstmt = conn.prepareStatement(
-					"select count(*) from ingredient where iname= ?");
-
-			// clear previous parameter values
-			lstmt.clearParameters();
-
-			// Replace the first question mark with the value of iname
-			lstmt.setString(1, iname);
-
-			// execute the query
-			rs = lstmt.executeQuery();
-
-			// advance the cursor to the first record
-			rs.next();
-			int count = rs.getInt(1);
-
-			System.out.println("count=" + count);
-
-			if (count > 0) {
-				toShow = "The ingredient " + iname + " exists";
-			} else
-				toShow = "The ingredient " + iname + " does not exist";
-
-			JOptionPane.showMessageDialog(null, toShow);
-			lstmt.close();
-			rs.close();
 
 		} catch (SQLException e) {
 		}
@@ -270,35 +219,37 @@ public class tweetsdb {
 			String sqlQuery = "";
 
 			String option = "";
-			String instruction = "Enter 1: Find all food with chicken as ingredient." + "\n"
-					+ "Enter 2: For each food, list food name, total number of ingredients, and total amount of ingredients (gram)."
-					+ "\n" + "Enter 3: Find all food without green onion as ingredient." + "\n"
-					+ "Enter 4: Find all ingredients and amount of each ingredient of BBQ Chicken" + "\n"
-					+ "Enter 5: Enter new food" + "\n"
-					+ "Enter 6: Check whether an ingredient exists" + "\n"
-					+ "Enter 7: Quit Program";
+			String instruction = "Option a: Insert a new Tweet into the tweets relation.\n"
+					+ "Option b: Delete a user from the users relation given the user screen name.\n"
+					+ "Option c: Report top 5 Twitter users who used a give hastag the most in their tweets posted in given month of a given year\n"
+					+ "Option e: Exit problem \n";
 
 			while (true) {
 				option = JOptionPane.showInputDialog(instruction);
-				if (option.equals("1")) {
-					sqlQuery = "select distinct f.fname from food f inner join recipe r on r.fid = f.fid inner join ingredient i on i.iid = r.iid where i.iname = 'Chicken'";
-					runQuery(stmt, sqlQuery);
-				} else if (option.equals("2")) {
+				if (option.equals("a")) {
+					int tid = 0;
+					tid = Integer.parseInt(JOptionPane.showInputDialog("Enter tid: "));
+					int post_day = 0;
+					post_day = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_day: "));
+					int post_month = 0;
+					post_month = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_month: "));
+					int post_year = 0;
+					post_year = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_year: "));
+					String texts = null;
+					texts = JOptionPane.showInputDialog("Enter the text post: ");
+					int retweetCt = 0;
+					retweetCt = Integer.parseInt(JOptionPane.showInputDialog("Enter the retweetCt: "));
+					String user_screen_name = null;
+					user_screen_name = JOptionPane.showInputDialog("Enter user_screen_name: ");
+					insertNewTweet(conn, tid, post_day, post_month, post_year, texts, retweetCt,
+							user_screen_name);
+				} else if (option.equals("b")) {
 					sqlQuery = "select f.fname, count(r.iid), sum(r.amount) from food f inner join recipe r on r.fid = f.fid inner join ingredient i on i.iid = r.iid group by f.fname";
 					runQuery(stmt, sqlQuery);
-				} else if (option.equals("3")) {
+				} else if (option.equals("c")) {
 					sqlQuery = "select f.fname from food f where f.fid not in (select r.fid from recipe r inner join ingredient i on i.iid = r.iid where i.iname = 'Green Onion');";
 					runQuery(stmt, sqlQuery);
-				} else if (option.equals("4")) {
-					sqlQuery = "select i.iname, r.amount from food f inner join recipe r on r.fid = f.fid inner join ingredient i on i.iid = r.iid where f.fname = 'BBQ Chicken'";
-					runQuery(stmt, sqlQuery);
-				} else if (option.equals("5")) {
-					String fname = JOptionPane.showInputDialog("Enter foodname:");
-					insertFood(conn, fname);
-				} else if (option.equals("6")) {
-					String iname = JOptionPane.showInputDialog("Enter exact name of the ingredient to check:");
-					checkIngredient(conn, iname);
-				} else {
+				} else if (option.equals("e")) {
 					break;
 				}
 			}

@@ -8,6 +8,13 @@
             "type": "java",
             "name": "Launch tweetsdb",
             "request": "launch",
+            "mainClass": "coms363.tweetsdb",
+            "projectName": "HW4_8c453f37"
+        },
+        {
+            "type": "java",
+            "name": "Launch tweetsdb",
+            "request": "launch",
             "mainClass": "tweetsdb",
             "projectName": "HW4_8c453f37"
         },
