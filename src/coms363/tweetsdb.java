@@ -7,6 +7,7 @@ import java.sql.*;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
+import java.awt.GridLayout;
 
 import com.mysql.cj.jdbc.exceptions.MySQLQueryInterruptedException;
 
@@ -18,6 +19,9 @@ import com.mysql.cj.jdbc.exceptions.MySQLQueryInterruptedException;
  * 
  */
 public class tweetsdb {
+	private static JFrame frame;
+    private static JPanel pane;
+
 	public static String[] loginDialog() {
 		// asking for a username and password to access the database.
 
@@ -228,21 +232,93 @@ public class tweetsdb {
 				option = JOptionPane.showInputDialog(instruction);
 				if (option.equals("a")) {
 					int tid = 0;
-					tid = Integer.parseInt(JOptionPane.showInputDialog("Enter tid: "));
-					int post_day = 0;
-					post_day = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_day: "));
-					int post_month = 0;
-					post_month = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_month: "));
-					int post_year = 0;
-					post_year = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_year: "));
-					String texts = null;
-					texts = JOptionPane.showInputDialog("Enter the text post: ");
-					int retweetCt = 0;
-					retweetCt = Integer.parseInt(JOptionPane.showInputDialog("Enter the retweetCt: "));
 					String user_screen_name = null;
-					user_screen_name = JOptionPane.showInputDialog("Enter user_screen_name: ");
+					int post_day = 0;
+					int post_month = 0;
+					int post_year = 0;
+					String texts = null;
+					int retweetCt = 0;
+
+					JTextField tidField;
+					JTextField user_screen_nameField;
+					JTextField post_dayField;
+					JTextField post_monthField;
+					JTextField post_yearField;
+					JTextField textsField;
+					JTextField retweetCtField;
+
+					pane = new JPanel();
+					pane.setLayout(new GridLayout(0, 2,2,2));
+			
+					tidField = new JTextField(5);
+					user_screen_nameField = new JTextField(5);
+					post_dayField = new JTextField(5);
+					post_monthField = new JTextField(5);
+					post_yearField = new JTextField(5);
+					textsField = new JTextField(5);
+					retweetCtField = new JTextField(5);
+			
+					pane.add(new JLabel("Enter tid: "));
+					pane.add(tidField);
+			
+					pane.add(new JLabel("Enter user_screen_name: "));
+					pane.add(user_screen_nameField);
+
+					pane.add(new JLabel("Enter the post_day: "));
+					pane.add(post_dayField);
+
+					pane.add(new JLabel("Enter the post_month: "));
+					pane.add(post_monthField);
+
+					pane.add(new JLabel("Enter the post_year: "));
+					pane.add(post_yearField);
+
+					pane.add(new JLabel("Enter the text post: "));
+					pane.add(textsField);
+
+					pane.add(new JLabel("Enter the retweetCt number: "));
+					pane.add(retweetCtField);
+			
+					int newoption = JOptionPane.showConfirmDialog(frame, pane, "Please fill the fields", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+			
+					if (newoption == JOptionPane.YES_OPTION) {
+			
+						String tidInput = tidField.getText();
+						String usernameInput = user_screen_nameField.getText();
+						String post_dayInput = post_dayField.getText();
+						String post_monthInput = post_monthField.getText();
+						String post_yearInput = post_yearField.getText();
+						String textInput = textsField.getText();
+						String retweetCtInput = retweetCtField.getText();
+			
+						try {
+							tid = Integer.parseInt(tidInput);
+							user_screen_name = usernameInput;
+							post_day = Integer.parseInt(post_dayInput);
+							post_month = Integer.parseInt(post_monthInput);
+							post_year = Integer.parseInt(post_yearInput);
+							texts = textInput;
+							retweetCt = Integer.parseInt(retweetCtInput);
+						} catch (NumberFormatException nfe) {
+							nfe.printStackTrace();
+						}
+					// int tid = 0;
+					// tid = Integer.parseInt(JOptionPane.showInputDialog("Enter tid: "));
+					// int post_day = 0;
+					// post_day = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_day: "));
+					// int post_month = 0;
+					// post_month = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_month: "));
+					// int post_year = 0;
+					// post_year = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_year: "));
+					// String texts = null;
+					// texts = JOptionPane.showInputDialog("Enter the text post: ");
+					// int retweetCt = 0;
+					// retweetCt = Integer.parseInt(JOptionPane.showInputDialog("Enter the retweetCt: "));
+					// String user_screen_name = null;
+					// user_screen_name = JOptionPane.showInputDialog("Enter user_screen_name: ");
 					insertNewTweet(conn, tid, post_day, post_month, post_year, texts, retweetCt,
 							user_screen_name);
+				}
 				} else if (option.equals("b")) {
 					sqlQuery = "select f.fname, count(r.iid), sum(r.amount) from food f inner join recipe r on r.fid = f.fid inner join ingredient i on i.iid = r.iid group by f.fname";
 					runQuery(stmt, sqlQuery);
