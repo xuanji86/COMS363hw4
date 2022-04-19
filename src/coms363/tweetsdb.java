@@ -168,9 +168,9 @@ public class tweetsdb {
 			inststmt.setString(7, user_screen_name);
 
 			// tell DBMS to insert the food into the table
-			int rowC = stmt.executeUpdate();
+			int rowC = ststmt.executeUpdate();
 			int rowcount = inststmt.executeUpdate();
-	
+
 			// show how many rows are impacted, should be one row if
 			// successful
 			// if not successful, SQLException occurs.
