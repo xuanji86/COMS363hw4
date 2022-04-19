@@ -168,6 +168,86 @@ public class tweetsdb {
 			inststmt.setString(7, user_screen_name);
 
 			// tell DBMS to insert the food into the table
+			int rowC = stmt.executeUpdate();
+			int rowcount = inststmt.executeUpdate();
+	
+			// show how many rows are impacted, should be one row if
+			// successful
+			// if not successful, SQLException occurs.
+			System.out.println("Number of rows in users updated:" + rowC);
+			ststmt.close();
+			System.out.println("Number of rows in tweets updated:" + rowcount);
+			inststmt.close();
+
+			// Tell DBMS to make sure all the changes you made from
+			// the prior commit is saved to the database
+			conn.commit();
+
+			// Reset the autocommit to commit per SQL statement
+			conn.setAutoCommit(true);
+
+		} catch (SQLException e) {}
+
+	}
+
+	private static void deleteUser(Connection conn,String screen_name){
+		if (conn == null||screen_name == null){
+			throw new NullPointerException();
+		}
+		try {
+			/*
+			 * we want to make sure that all SQL statements for insertion
+			 * of a new food are considered as one unit.
+			 * That is all SQL statements between the commit and previous commit
+			 * get stored permanently in the DBMS or all the SQL statements
+			 * in the same transaction are rolled back.
+			 *
+			 * By default, the isolation level is TRANSACTION_REPEATABLE_READ
+			 * By default, each SQL statement is one transaction
+			 *
+			 * conn.setAutoCommit(false) is to
+			 * specify what SQL statements are in the same transaction
+			 * by a developer.
+			 * Several SQL statements can be put in one transaction.
+			 */
+
+			conn.setAutoCommit(false);
+			// full protection against interference from other transaction
+			// prevent dirty read
+			// prevent unrepeatable reads
+			// prevent phantom reads
+			conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+			Statement stmt = conn.createStatement();
+			ResultSet rs;
+
+			// get the maximum id from the food table
+			rs = stmt.executeQuery("select screen_name from project.users");
+			while (rs.next()) {
+				// 1 indicates the position of the returned result we want to get
+				if (null == rs.getString(1)) {
+					throw new MySQLQueryInterruptedException("No user in database");
+				}
+			}
+			rs.close();
+			stmt.close();
+			// once done, close the DBMS resources
+
+			/*
+			 * Example of a parameterized query, which is
+			 * that have ? in them where ? is
+			 * replaced by a value obtained from a user
+			 */
+			PreparedStatement ststmt = conn.prepareStatement(
+					"delete from tweets where user_screen_name = ?");
+
+			PreparedStatement inststmt = conn.prepareStatement(
+					"delete from users where screen_name= ?");
+
+			ststmt.setString(1,screen_name);
+			inststmt.setString(1, screen_name);;
+
+			// tell DBMS to insert the food into the table
 			int rowcount = inststmt.executeUpdate();
 
 			// show how many rows are impacted, should be one row if
@@ -185,7 +265,7 @@ public class tweetsdb {
 
 		} catch (SQLException e) {}
 
-}
+	}
 
 	public static void main(String[] args) {
 		// useSSL=false means plain text allowed
