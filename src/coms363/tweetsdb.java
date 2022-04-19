@@ -109,12 +109,10 @@ public class tweetsdb {
 		rs.close();
 	}
 
-	private static void insertNewTweet(Connection conn, int tid, int post_day, int post_month, int post_year,
-			String texts, int retweetCt,
-			String user_screen_name) {
-
-		if (conn == null || tid == 0 || user_screen_name == null)
+	private static void insertNewTweet(Connection conn, int tid, int post_day, int post_month, int post_year, String texts, int retweetCt,String user_screen_name){
+		if (conn == null || tid == 0 || user_screen_name == null){
 			throw new NullPointerException();
+		}
 		try {
 			/*
 			 * we want to make sure that all SQL statements for insertion
@@ -186,10 +184,9 @@ public class tweetsdb {
 			// Reset the autocommit to commit per SQL statement
 			conn.setAutoCommit(true);
 
-		} catch (SQLException e) {
-		}
+		} catch (SQLException e) {}
 
-	}
+}
 
 	public static void main(String[] args) {
 		// useSSL=false means plain text allowed
