@@ -61,44 +61,11 @@ public class tweetsdb {
 		}
 		return result;
 	}
-
 	/**
-	 * @param stmt
-	 * @param sqlQuery
-	 * @throws SQLException
+	 * insert new tweet
+	 * @param conn Valid database connection
+	 * tidInput: id of tweet to check, post_day: tweet post day, post_month: tweet post month, post_year: tweet post year,text: tweet text, retweetCt: retweet count, user_screen_name: name of user to check 
 	 */
-	// run a static SQL query
-	private static void runQuery(Statement stmt, String sqlQuery) throws SQLException {
-		// ResultSet is used to store the data returned by DBMS when issuing a static
-		// query
-		ResultSet rs;
-
-		// ResultSetMetaData is used to find meta data about the data returned
-		ResultSetMetaData rsMetaData;
-		String toShow;
-
-		// Send the SQL query to the DBMS
-		rs = stmt.executeQuery(sqlQuery);
-
-		// get information about the returned result.
-		rsMetaData = rs.getMetaData();
-		System.out.println(sqlQuery);
-		toShow = "";
-
-		// iterate through each item in the returned result
-		while (rs.next()) {
-			// concatenate the columns in each row
-			for (int i = 0; i < rsMetaData.getColumnCount(); i++) {
-
-				toShow += rs.getString(i + 1) + ", ";
-			}
-			toShow += "\n";
-		}
-		// show the dialog box with the returned result by DBMS
-		JOptionPane.showMessageDialog(null, toShow);
-		rs.close();
-	}
-
 	private static void insertNewTweet(Connection conn, String tidInput, int post_day, int post_month, int post_year, String texts, int retweetCt, String user_screen_name) {
 		int tid = 0;
 		if(tidInput.matches("[0-9]+")){
@@ -173,7 +140,11 @@ public class tweetsdb {
 		}
 
 	}
-
+	/**
+	 * insert user
+	 * @param conn Valid database connection
+	 * user_screen_name: the name of the user to check
+	 */
 	private static void deleteUser(Connection conn, String user_screen_name) {
 		if (conn == null || user_screen_name == null) {
 			throw new NullPointerException();
@@ -368,8 +339,7 @@ public class tweetsdb {
 					}
 					deleteUser(conn, user_screen_name);
 				} else if (option.equals("c")) {
-					sqlQuery = "select f.fname from food f where f.fid not in (select r.fid from recipe r inner join ingredient i on i.iid = r.iid where i.iname = 'Green Onion');";
-					runQuery(stmt, sqlQuery);
+					
 				} else if (option.equals("e")) {
 					break;
 				}
