@@ -1,14 +1,13 @@
 package coms363;
 
-import com.mysql.cj.jdbc.exceptions.MySQLQueryInterruptedException;
-
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.sql.*;
 
 /*
- * Author: Anji Xu and ComS 363 Teaching Staff
+ * Author: ComS 363 Teaching Staff
+ * @Anji Xu
  */
 public class tweetsdb {
 	private static JFrame frame;
@@ -16,7 +15,6 @@ public class tweetsdb {
 
 	public static String[] loginDialog() {
 		// asking for a username and password to access the database.
-
 		String result[] = new String[2];
 		JPanel panel = new JPanel(new GridBagLayout());
 		GridBagConstraints cs = new GridBagConstraints();
@@ -330,8 +328,8 @@ public class tweetsdb {
 							post_year = Integer.parseInt(post_yearInput);
 							texts = textInput;
 							retweetCt = Integer.parseInt(retweetCtInput);
-						} catch (NumberFormatException e) {
-
+						} catch (Exception e) {
+							e.printStackTrace();
 						}
 						// int tid = 0;
 						// tid = Integer.parseInt(JOptionPane.showInputDialog("Enter tid: "));
@@ -365,7 +363,7 @@ public class tweetsdb {
 						if(confirm == "y"){
 							deleteUser(conn, user_screen_name);
 						}
-					} catch (NumberFormatException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 					deleteUser(conn, user_screen_name);
