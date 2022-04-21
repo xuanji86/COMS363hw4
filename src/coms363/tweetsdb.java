@@ -156,20 +156,18 @@ public class tweetsdb {
 			// prevent unrepeatable reads
 			// prevent phantom reads
 			conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-			System.out.println("flag1");
+
 			PreparedStatement ststmt = conn.prepareStatement(
 					"delete from tweets where user_screen_name = ?");
 
 			PreparedStatement inststmt = conn.prepareStatement(
 					"delete from users where screen_name= ?");
-					System.out.println("flag2");
+
 			ststmt.setString(1, user_screen_name);
 			inststmt.setString(1, user_screen_name);
-			System.out.println("flag3");
 			// tell DBMS to insert the food into the table
 			int rowC = ststmt.executeUpdate();
 			int rowcount = inststmt.executeUpdate();
-			System.out.println("flag4");
 			// show how many rows are impacted, should be one row if
 			// successful
 			// if not successful, SQLException occurs.
@@ -191,6 +189,14 @@ public class tweetsdb {
 
 	}
 
+
+	private static void top5User(Connection conn, String hashtag_name, int post_month, int post_year, String state){
+		if (conn == null || hashtag_name.equals("") || post_month == 0 || post_year == 0 || state.equals("")) {
+			JOptionPane.showMessageDialog(null, "Invalid input",
+			"Error", JOptionPane.ERROR_MESSAGE);
+			throw new NullPointerException();
+		}
+	}
 	public static void main(String[] args) {
 		// useSSL=false means plain text allowed
 		// String dbServer = "jdbc:mysql://localhost:3306/fooddb?useSSL=false";
@@ -339,7 +345,54 @@ public class tweetsdb {
 					}
 					deleteUser(conn, user_screen_name);
 				} else if (option.equals("c")) {
-					
+					String hashtag_name = null;
+					int post_month = 0;
+					int post_year = 0;
+					String state = null;
+
+					JTextField hashtagField;
+					JTextField post_monthField;
+					JTextField post_yearField;
+					JTextField stateField;
+
+					pane = new JPanel();
+					pane.setLayout(new GridLayout(0, 2, 2, 2));
+
+					hashtagField = new JTextField(5);
+					post_monthField = new JTextField(5);
+					post_yearField = new JTextField(5);
+					stateField = new JTextField(5);
+
+					pane.add(new JLabel("Enter the hashtag_name: "));
+					pane.add(hashtagField);
+
+					pane.add(new JLabel("Enter the post_month: "));
+					pane.add(post_monthField);
+
+					pane.add(new JLabel("Enter the post_year: "));
+					pane.add(post_yearField);
+
+					pane.add(new JLabel("Enter the state: "));
+					pane.add(stateField);
+
+					int newoption = JOptionPane.showConfirmDialog(frame, pane, "Please fill the fields",
+							JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+
+					if (newoption == JOptionPane.YES_OPTION) {
+						String hashtageInput = hashtagField.getText();
+						String post_monthInput = post_monthField.getText();
+						String post_yearInput = post_yearField.getText();
+						String stateInput = stateField.getText();
+
+						try {
+							hashtag_name = hashtageInput;
+							post_month = Integer.parseInt(post_monthInput);
+							post_year = Integer.parseInt(post_yearInput);
+							state = stateInput;
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					top5User(conn, hashtag_name, post_month, post_year, state);
 				} else if (option.equals("e")) {
 					break;
 				}
@@ -350,9 +403,7 @@ public class tweetsdb {
 			// close the connection
 			if (conn != null)
 				conn.close();
-		} catch (
-
-		Exception e) {
+		} catch (Exception e) {
 
 			System.out.println("Program terminates due to errors or user cancelation");
 			e.printStackTrace(); // for debugging;
