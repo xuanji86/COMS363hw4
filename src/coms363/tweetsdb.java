@@ -2,8 +2,12 @@ package coms363;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import java.awt.*;
 import java.sql.*;
+
 
 /*
  * Author: ComS 363 Teaching Staff
@@ -61,24 +65,30 @@ public class tweetsdb {
 		}
 		return result;
 	}
+
 	/**
 	 * insert new tweet
+	 * 
 	 * @param conn Valid database connection
-	 * tidInput: id of tweet to check, post_day: tweet post day, post_month: tweet post month, post_year: tweet post year,text: tweet text, retweetCt: retweet count, user_screen_name: name of user to check 
+	 *             tidInput: id of tweet to check, post_day: tweet post day,
+	 *             post_month: tweet post month, post_year: tweet post year,text:
+	 *             tweet text, retweetCt: retweet count, user_screen_name: name of
+	 *             user to check
 	 */
-	private static void insertNewTweet(Connection conn, String tidInput, int post_day, int post_month, int post_year, String texts, int retweetCt, String user_screen_name) {
+	private static void insertNewTweet(Connection conn, String tidInput, int post_day, int post_month, int post_year,
+			String texts, int retweetCt, String user_screen_name) {
 		int tid = 0;
-		if(tidInput.matches("[0-9]+")){
+		if (tidInput.matches("[0-9]+")) {
 			tid = Integer.parseInt(tidInput);
-		}else{
+		} else {
 			JOptionPane.showMessageDialog(null, "Invalid input",
-			"Error", JOptionPane.ERROR_MESSAGE);
+					"Error", JOptionPane.ERROR_MESSAGE);
 			throw new NullPointerException();
 		}
 
 		if (conn == null || user_screen_name.equals("") || tid == 0) {
 			JOptionPane.showMessageDialog(null, "Invalid input",
-			"Error", JOptionPane.ERROR_MESSAGE);
+					"Error", JOptionPane.ERROR_MESSAGE);
 			throw new NullPointerException();
 		}
 		try {
@@ -140,10 +150,12 @@ public class tweetsdb {
 		}
 
 	}
+
 	/**
 	 * insert user
+	 * 
 	 * @param conn Valid database connection
-	 * user_screen_name: the name of the user to check
+	 *             user_screen_name: the name of the user to check
 	 */
 	private static void deleteUser(Connection conn, String user_screen_name) {
 		if (conn == null || user_screen_name == null) {
@@ -156,13 +168,11 @@ public class tweetsdb {
 			// prevent unrepeatable reads
 			// prevent phantom reads
 			conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-
 			PreparedStatement ststmt = conn.prepareStatement(
 					"delete from tweets where user_screen_name = ?");
 
 			PreparedStatement inststmt = conn.prepareStatement(
 					"delete from users where screen_name= ?");
-
 			ststmt.setString(1, user_screen_name);
 			inststmt.setString(1, user_screen_name);
 			// tell DBMS to insert the food into the table
@@ -189,14 +199,143 @@ public class tweetsdb {
 
 	}
 
-
-	private static void top5User(Connection conn, String hashtag_name, int post_month, int post_year, String state){
+	private static void top5User(Connection conn, String hashtag_name, int post_month, int post_year, String state) {
 		if (conn == null || hashtag_name.equals("") || post_month == 0 || post_year == 0 || state.equals("")) {
 			JOptionPane.showMessageDialog(null, "Invalid input",
-			"Error", JOptionPane.ERROR_MESSAGE);
+					"Error", JOptionPane.ERROR_MESSAGE);
 			throw new NullPointerException();
 		}
+		try {
+			conn.setAutoCommit(false);
+			// full protection against interference from other transaction
+			// prevent dirty read
+			// prevent unrepeatable reads
+			// prevent phantom reads
+			conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+			PreparedStatement ststmt1 = conn.prepareStatement("DROP procedure if exists findUserPostingHashtag;");
+			PreparedStatement procedure = conn.prepareStatement(
+					"create procedure findUserPostingHashtag(hashName varchar(80),month int,year int,state varchar(80)) " +
+							"BEGIN\n" +
+							"select count(tweets.tid) as tweet_count ,users.screen_name,users.category " +
+							"from hashtags, tweets,users " +
+							"where hashtags.name = hashName and hashtags.tid=tweets.tid and " +
+							"tweets.post_month = month and tweets.post_year = year " +
+							"and tweets.user_screen_name=users.screen_name " +
+							"and users.state = state " +
+							"group by tweets.user_screen_name order by count(tweets.tid) desc limit 5;\n " +
+							"END;");
+
+			PreparedStatement CallProd = conn.prepareStatement("call findUserPostingHashtag(?,?,?,?)");
+			CallProd.setString(1, hashtag_name);
+			CallProd.setInt(2, post_month);
+			CallProd.setInt(3, post_year);
+			CallProd.setString(4, state);
+
+			ststmt1.execute();
+			ststmt1.close();
+			procedure.execute();
+			procedure.close();
+			System.out.println("Stored Procedure created!");
+			CallProd.execute();
+			// CallProd.close();
+			System.out.println("Stored Procedure called!");
+			// int Result1 = CallProd.getInt(1);
+			// System.out.println(Result1);
+			CallProd.close();
+			// PreparedStatement ststmt2 = conn.prepareStatement("DECLARE @Procedure TABLE(\n tweet_count int,\n screen_name varchar(50),\n category varchar(50)\n);");
+			// PreparedStatement ststmt3 = conn.prepareStatement("INSERT INTO @Procedure EXEC findUserPostingHashtag ?,?,?,?");
+			// ststmt3.setString(1, hashtag_name);
+			// ststmt3.setInt(2, post_month);
+			// ststmt3.setInt(3, post_year);
+			// ststmt3.setString(4, state);
+			
+			// ststmt2.executeUpdate();
+			// ststmt2.close();
+
+			// ststmt3.executeUpdate();
+			// ststmt3.close();
+			// System.out.println("New table created!");
+			conn.commit();
+
+			
+
+			// Reset the autocommit to commit per SQL statement
+			conn.setAutoCommit(true);
+
+			ResultSet rs;
+			Statement stmt = conn.createStatement();
+			rs = stmt.executeQuery("select * from @Procedure");
+		// 	ResultSetMetaData resultSetMetaData = rs.getMetaData();
+		// 	int ColumnCount = resultSetMetaData.getColumnCount();
+		// 	int[] columnMaxLengths = new int[ColumnCount];
+		// 	String[] columnStr = new String[ColumnCount];
+		// 	ArrayList<String[]> results = new ArrayList<>();
+        // // 按行遍历
+        // while (rs.next()) {
+        //     // 保存当前行所有列
+        //     columnStr = new String[ColumnCount];
+        //     // 获取属性值.
+        //     for (int i = 0; i < ColumnCount; i++) {
+        //         // 获取一列
+        //         columnStr[i] = rs.getString(i + 1);
+        //         // 计算当前列的最大长度
+        //         columnMaxLengths[i] = Math.max(columnMaxLengths[i], (columnStr[i] == null) ? 0 : columnStr[i].length());
+        //     }
+        //     // 缓存这一行.
+        //     results.add(columnStr);
+        // }
+        // printSeparator(columnMaxLengths);
+        // printColumnName(resultSetMetaData, columnMaxLengths);
+        // printSeparator(columnMaxLengths);
+
+        // // 遍历集合输出结果
+        // Iterator<String[]> iterator = results.iterator();
+        // while (iterator.hasNext()) {
+        //     columnStr = iterator.next();
+        //     for (int i = 0; i < ColumnCount; i++) {
+        //         // System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s", columnStr[i]);
+        //         System.out.printf("|%" + columnMaxLengths[i] + "s", columnStr[i]);
+        //     }
+        //     System.out.println("|");
+        // }
+        // printSeparator(columnMaxLengths);			
+			int col1 = 0;
+			String col2 = null;
+			String col3 = null;
+			System.out.println("Tweet_count " + "screen_name "+ "category");
+				while(rs.next()){
+					col1 = rs.getInt(1);
+					System.out.println(col1 + " ");
+					col2 = rs.getString(2);
+					System.out.println(col2 + " ");
+					col3 = rs.getString(col3);
+					System.out.println(col3);
+				}
+				
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
+	// private static void printColumnName(ResultSetMetaData resultSetMetaData, int[] columnMaxLengths) throws SQLException {
+    //     int columnCount = resultSetMetaData.getColumnCount();
+    //     for (int i = 0; i < columnCount; i++) {
+    //         // System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s", resultSetMetaData.getColumnName(i + 1));
+    //         System.out.printf("|%" + columnMaxLengths[i] + "s", resultSetMetaData.getColumnName(i + 1));
+    //     }
+    //     System.out.println("|");
+    // }
+
+	// private static void printSeparator(int[] columnMaxLengths) {
+    //     for (int i = 0; i < columnMaxLengths.length; i++) {
+    //         System.out.print("+");
+    //         // for (int j = 0; j < columnMaxLengths[i] + 1; j++) {
+    //         for (int j = 0; j < columnMaxLengths[i]; j++) {
+    //             System.out.print("-");
+    //         }
+    //     }
+    //     System.out.println("+");
+    // }
+
 	public static void main(String[] args) {
 		// useSSL=false means plain text allowed
 		// String dbServer = "jdbc:mysql://localhost:3306/fooddb?useSSL=false";
@@ -226,7 +365,6 @@ public class tweetsdb {
 			conn = DriverManager.getConnection(dbServer, userName, password);
 
 			stmt = conn.createStatement();
-			String sqlQuery = "";
 
 			String option = "";
 			String instruction = "Option a: Insert a new Tweet into the tweets relation.\n"
@@ -332,12 +470,12 @@ public class tweetsdb {
 					}
 				} else if (option.equals("b")) {
 					String user_screen_name = null;
-					//String usernameInput = null;
+					// String usernameInput = null;
 					String confirm = null;
 					try {
 						user_screen_name = JOptionPane.showInputDialog("Enter user_screen_name: ");
 						confirm = JOptionPane.showInputDialog("Enter 'y' to continue: ");
-						if(confirm == "y"){
+						if (confirm == "y") {
 							deleteUser(conn, user_screen_name);
 						}
 					} catch (Exception e) {
@@ -377,7 +515,6 @@ public class tweetsdb {
 
 					int newoption = JOptionPane.showConfirmDialog(frame, pane, "Please fill the fields",
 							JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
-
 					if (newoption == JOptionPane.YES_OPTION) {
 						String hashtageInput = hashtagField.getText();
 						String post_monthInput = post_monthField.getText();
@@ -392,6 +529,7 @@ public class tweetsdb {
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
+					}
 					top5User(conn, hashtag_name, post_month, post_year, state);
 				} else if (option.equals("e")) {
 					break;
@@ -403,7 +541,9 @@ public class tweetsdb {
 			// close the connection
 			if (conn != null)
 				conn.close();
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 
 			System.out.println("Program terminates due to errors or user cancelation");
 			e.printStackTrace(); // for debugging;
