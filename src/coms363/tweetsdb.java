@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.awt.*;
 import java.sql.*;
 
-
 /*
  * Author: ComS 363 Teaching Staff
  * @Anji Xu
@@ -214,7 +213,8 @@ public class tweetsdb {
 			conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 			PreparedStatement ststmt1 = conn.prepareStatement("DROP procedure if exists findUserPostingHashtag;");
 			PreparedStatement procedure = conn.prepareStatement(
-					"create procedure findUserPostingHashtag(hashName varchar(80),month int,year int,state varchar(80)) " +
+					"create procedure findUserPostingHashtag(hashName varchar(80),month int,year int,state varchar(80)) "
+							+
 							"BEGIN\n" +
 							"select count(tweets.tid) as tweet_count ,users.screen_name,users.category " +
 							"from hashtags, tweets,users " +
@@ -224,117 +224,105 @@ public class tweetsdb {
 							"and users.state = state " +
 							"group by tweets.user_screen_name order by count(tweets.tid) desc limit 5;\n " +
 							"END;");
-
-			PreparedStatement CallProd = conn.prepareStatement("call findUserPostingHashtag(?,?,?,?)");
-			CallProd.setString(1, hashtag_name);
-			CallProd.setInt(2, post_month);
-			CallProd.setInt(3, post_year);
-			CallProd.setString(4, state);
-
 			ststmt1.execute();
 			ststmt1.close();
 			procedure.execute();
 			procedure.close();
 			System.out.println("Stored Procedure created!");
+
+			CallableStatement CallProd = conn.prepareCall("{call findUserPostingHashtag(?,?,?,?)}");
+
+			// CallProd.registerOutParameter(1,Types.VARCHAR);
+			// CallProd.registerOutParameter(2, Types.INTEGER);
+			// CallProd.registerOutParameter(3, Types.INTEGER);
+			// CallProd.registerOutParameter(4, Types.VARCHAR);
+
+			CallProd.setString(1, hashtag_name);
+			CallProd.setInt(2, post_month);
+			CallProd.setInt(3, post_year);
+			CallProd.setString(4, state);
+			// CallProd.executeUpdate();
 			CallProd.execute();
-			// CallProd.close();
-			System.out.println("Stored Procedure called!");
-			// int Result1 = CallProd.getInt(1);
-			// System.out.println(Result1);
+			System.out.println("Stored Procedure called!\n");
+
+			ResultSet rs = CallProd.executeQuery();
+			// while (rs.next()) {
+			// System.out.println(
+			// rs.getInt("tweet_count") + "\t" + rs.getString("screen_name") + "\t"
+			// + rs.getString("category"));
+			// }
+			ResultSetMetaData resultSetMetaData = rs.getMetaData();
+			int ColumnCount = resultSetMetaData.getColumnCount();
+			int[] columnMaxLengths = new int[ColumnCount];
+			String[] columnStr = new String[ColumnCount];
+			ArrayList<String[]> results = new ArrayList<>();
+			// 按行遍历
+			while (rs.next()) {
+				// 保存当前行所有列
+				columnStr = new String[ColumnCount];
+				// 获取属性值.
+				for (int i = 0; i < ColumnCount; i++) {
+					// 获取一列
+					columnStr[i] = rs.getString(i + 1);
+					// 计算当前列的最大长度
+					columnMaxLengths[i] = Math.max(columnMaxLengths[i],
+							(columnStr[i] == null) ? 0 : columnStr[i].length());
+				}
+				// 缓存这一行.
+				results.add(columnStr);
+			}
+			printSeparator(columnMaxLengths);
+			printColumnName(resultSetMetaData, columnMaxLengths);
+			printSeparator(columnMaxLengths);
+
+			// 遍历集合输出结果
+			Iterator<String[]> iterator = results.iterator();
+			while (iterator.hasNext()) {
+				columnStr = iterator.next();
+				for (int i = 0; i < ColumnCount; i++) {
+					// System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s", columnStr[i]);
+					System.out.printf("|%" + columnMaxLengths[i] + "s", columnStr[i]);
+				}
+				System.out.println("|");
+			}
+			printSeparator(columnMaxLengths);
+			rs.close();
 			CallProd.close();
-			// PreparedStatement ststmt2 = conn.prepareStatement("DECLARE @Procedure TABLE(\n tweet_count int,\n screen_name varchar(50),\n category varchar(50)\n);");
-			// PreparedStatement ststmt3 = conn.prepareStatement("INSERT INTO @Procedure EXEC findUserPostingHashtag ?,?,?,?");
-			// ststmt3.setString(1, hashtag_name);
-			// ststmt3.setInt(2, post_month);
-			// ststmt3.setInt(3, post_year);
-			// ststmt3.setString(4, state);
-			
-			// ststmt2.executeUpdate();
-			// ststmt2.close();
 
-			// ststmt3.executeUpdate();
-			// ststmt3.close();
-			// System.out.println("New table created!");
 			conn.commit();
-
-			
 
 			// Reset the autocommit to commit per SQL statement
 			conn.setAutoCommit(true);
 
-			ResultSet rs;
-			Statement stmt = conn.createStatement();
-			rs = stmt.executeQuery("select * from @Procedure");
-		// 	ResultSetMetaData resultSetMetaData = rs.getMetaData();
-		// 	int ColumnCount = resultSetMetaData.getColumnCount();
-		// 	int[] columnMaxLengths = new int[ColumnCount];
-		// 	String[] columnStr = new String[ColumnCount];
-		// 	ArrayList<String[]> results = new ArrayList<>();
-        // // 按行遍历
-        // while (rs.next()) {
-        //     // 保存当前行所有列
-        //     columnStr = new String[ColumnCount];
-        //     // 获取属性值.
-        //     for (int i = 0; i < ColumnCount; i++) {
-        //         // 获取一列
-        //         columnStr[i] = rs.getString(i + 1);
-        //         // 计算当前列的最大长度
-        //         columnMaxLengths[i] = Math.max(columnMaxLengths[i], (columnStr[i] == null) ? 0 : columnStr[i].length());
-        //     }
-        //     // 缓存这一行.
-        //     results.add(columnStr);
-        // }
-        // printSeparator(columnMaxLengths);
-        // printColumnName(resultSetMetaData, columnMaxLengths);
-        // printSeparator(columnMaxLengths);
+		} catch (
 
-        // // 遍历集合输出结果
-        // Iterator<String[]> iterator = results.iterator();
-        // while (iterator.hasNext()) {
-        //     columnStr = iterator.next();
-        //     for (int i = 0; i < ColumnCount; i++) {
-        //         // System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s", columnStr[i]);
-        //         System.out.printf("|%" + columnMaxLengths[i] + "s", columnStr[i]);
-        //     }
-        //     System.out.println("|");
-        // }
-        // printSeparator(columnMaxLengths);			
-			int col1 = 0;
-			String col2 = null;
-			String col3 = null;
-			System.out.println("Tweet_count " + "screen_name "+ "category");
-				while(rs.next()){
-					col1 = rs.getInt(1);
-					System.out.println(col1 + " ");
-					col2 = rs.getString(2);
-					System.out.println(col2 + " ");
-					col3 = rs.getString(col3);
-					System.out.println(col3);
-				}
-				
-		} catch (SQLException e) {
+		SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	// private static void printColumnName(ResultSetMetaData resultSetMetaData, int[] columnMaxLengths) throws SQLException {
-    //     int columnCount = resultSetMetaData.getColumnCount();
-    //     for (int i = 0; i < columnCount; i++) {
-    //         // System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s", resultSetMetaData.getColumnName(i + 1));
-    //         System.out.printf("|%" + columnMaxLengths[i] + "s", resultSetMetaData.getColumnName(i + 1));
-    //     }
-    //     System.out.println("|");
-    // }
 
-	// private static void printSeparator(int[] columnMaxLengths) {
-    //     for (int i = 0; i < columnMaxLengths.length; i++) {
-    //         System.out.print("+");
-    //         // for (int j = 0; j < columnMaxLengths[i] + 1; j++) {
-    //         for (int j = 0; j < columnMaxLengths[i]; j++) {
-    //             System.out.print("-");
-    //         }
-    //     }
-    //     System.out.println("+");
-    // }
+	private static void printColumnName(ResultSetMetaData resultSetMetaData,
+			int[] columnMaxLengths) throws SQLException {
+		int columnCount = resultSetMetaData.getColumnCount();
+		for (int i = 0; i < columnCount; i++) {
+			// System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s",
+			resultSetMetaData.getColumnName(i + 1);
+			System.out.printf("|%" + columnMaxLengths[i] + "s",
+					resultSetMetaData.getColumnName(i + 1));
+		}
+		System.out.println("|");
+	}
+
+	private static void printSeparator(int[] columnMaxLengths) {
+		for (int i = 0; i < columnMaxLengths.length; i++) {
+			System.out.print("+");
+			// for (int j = 0; j < columnMaxLengths[i] + 1; j++) {
+			for (int j = 0; j < columnMaxLengths[i]; j++) {
+				System.out.print("-");
+			}
+		}
+		System.out.println("+");
+	}
 
 	public static void main(String[] args) {
 		// useSSL=false means plain text allowed
