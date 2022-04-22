@@ -2,14 +2,13 @@ package coms363;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
-import java.util.ArrayList;
-import java.util.Iterator;
 
 import java.awt.*;
 import java.sql.*;
 
 /*
- * Author: ComS 363 Teaching Staff
+ * Author: 
+ * ComS 363 Teaching Staff
  * @Anji Xu
  */
 public class tweetsdb {
@@ -232,60 +231,21 @@ public class tweetsdb {
 
 			CallableStatement CallProd = conn.prepareCall("{call findUserPostingHashtag(?,?,?,?)}");
 
-			// CallProd.registerOutParameter(1,Types.VARCHAR);
-			// CallProd.registerOutParameter(2, Types.INTEGER);
-			// CallProd.registerOutParameter(3, Types.INTEGER);
-			// CallProd.registerOutParameter(4, Types.VARCHAR);
-
 			CallProd.setString(1, hashtag_name);
 			CallProd.setInt(2, post_month);
 			CallProd.setInt(3, post_year);
 			CallProd.setString(4, state);
-			// CallProd.executeUpdate();
 			CallProd.execute();
 			System.out.println("Stored Procedure called!\n");
 
 			ResultSet rs = CallProd.executeQuery();
-			// while (rs.next()) {
-			// System.out.println(
-			// rs.getInt("tweet_count") + "\t" + rs.getString("screen_name") + "\t"
-			// + rs.getString("category"));
-			// }
-			ResultSetMetaData resultSetMetaData = rs.getMetaData();
-			int ColumnCount = resultSetMetaData.getColumnCount();
-			int[] columnMaxLengths = new int[ColumnCount];
-			String[] columnStr = new String[ColumnCount];
-			ArrayList<String[]> results = new ArrayList<>();
-			// 按行遍历
+			System.out.printf("%-15s %-15s %-15s", "tweet_count", "screen_name", "category");
+			System.out.println();
 			while (rs.next()) {
-				// 保存当前行所有列
-				columnStr = new String[ColumnCount];
-				// 获取属性值.
-				for (int i = 0; i < ColumnCount; i++) {
-					// 获取一列
-					columnStr[i] = rs.getString(i + 1);
-					// 计算当前列的最大长度
-					columnMaxLengths[i] = Math.max(columnMaxLengths[i],
-							(columnStr[i] == null) ? 0 : columnStr[i].length());
-				}
-				// 缓存这一行.
-				results.add(columnStr);
+				System.out.printf("%-15s %-15s %-15s",
+						rs.getInt("tweet_count"), rs.getString("screen_name"), rs.getString("category"));
+				System.out.println();
 			}
-			printSeparator(columnMaxLengths);
-			printColumnName(resultSetMetaData, columnMaxLengths);
-			printSeparator(columnMaxLengths);
-
-			// 遍历集合输出结果
-			Iterator<String[]> iterator = results.iterator();
-			while (iterator.hasNext()) {
-				columnStr = iterator.next();
-				for (int i = 0; i < ColumnCount; i++) {
-					// System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s", columnStr[i]);
-					System.out.printf("|%" + columnMaxLengths[i] + "s", columnStr[i]);
-				}
-				System.out.println("|");
-			}
-			printSeparator(columnMaxLengths);
 			rs.close();
 			CallProd.close();
 
@@ -301,38 +261,13 @@ public class tweetsdb {
 		}
 	}
 
-	private static void printColumnName(ResultSetMetaData resultSetMetaData,
-			int[] columnMaxLengths) throws SQLException {
-		int columnCount = resultSetMetaData.getColumnCount();
-		for (int i = 0; i < columnCount; i++) {
-			// System.out.printf("|%" + (columnMaxLengths[i] + 1) + "s",
-			resultSetMetaData.getColumnName(i + 1);
-			System.out.printf("|%" + columnMaxLengths[i] + "s",
-					resultSetMetaData.getColumnName(i + 1));
-		}
-		System.out.println("|");
-	}
-
-	private static void printSeparator(int[] columnMaxLengths) {
-		for (int i = 0; i < columnMaxLengths.length; i++) {
-			System.out.print("+");
-			// for (int j = 0; j < columnMaxLengths[i] + 1; j++) {
-			for (int j = 0; j < columnMaxLengths[i]; j++) {
-				System.out.print("-");
-			}
-		}
-		System.out.println("+");
-	}
-
 	public static void main(String[] args) {
 		// useSSL=false means plain text allowed
-		// String dbServer = "jdbc:mysql://localhost:3306/fooddb?useSSL=false";
 		// useSSL=true; data are encrypted when sending between DBMS and
 		// this program
 
-		// String dbServer = "jdbc:mysql://localhost:3306/fooddb?useSSL=true";
-		// String dbServer = "jdbc:mysql://127.0.0.1:3306/project?useSSL=true";
-		String dbServer = "jdbc:mysql://localhost:3306/project?useSSL=true";
+		String dbServer = "jdbc:mysql://127.0.0.1:3306/project?useSSL=true";
+		// String dbServer = "jdbc:mysql://localhost:3306/project?useSSL=true";
 		String userName = "";
 		String password = "";
 
@@ -434,24 +369,6 @@ public class tweetsdb {
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
-						// int tid = 0;
-						// tid = Integer.parseInt(JOptionPane.showInputDialog("Enter tid: "));
-						// int post_day = 0;
-						// post_day = Integer.parseInt(JOptionPane.showInputDialog("Enter the post_day:
-						// "));
-						// int post_month = 0;
-						// post_month = Integer.parseInt(JOptionPane.showInputDialog("Enter the
-						// post_month: "));
-						// int post_year = 0;
-						// post_year = Integer.parseInt(JOptionPane.showInputDialog("Enter the
-						// post_year: "));
-						// String texts = null;
-						// texts = JOptionPane.showInputDialog("Enter the text post: ");
-						// int retweetCt = 0;
-						// retweetCt = Integer.parseInt(JOptionPane.showInputDialog("Enter the
-						// retweetCt: "));
-						// String user_screen_name = null;
-						// user_screen_name = JOptionPane.showInputDialog("Enter user_screen_name: ");
 						insertNewTweet(conn, tid, post_day, post_month, post_year, texts, retweetCt,
 								user_screen_name);
 
@@ -532,7 +449,6 @@ public class tweetsdb {
 		} catch (
 
 		Exception e) {
-
 			System.out.println("Program terminates due to errors or user cancelation");
 			e.printStackTrace(); // for debugging;
 		}
